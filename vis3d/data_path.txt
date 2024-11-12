@@ -1,0 +1,60 @@
+kitti: (6021)
+/dataset/kitti_processed_CMRNet_small/sequences/00/map/map-00_0.1_0-4541.pcd
+/dataset/kitti_processed_DeepI2P/data_odometry_color_npy/sequences/00/image_2
+lidar-相机变换：[[ 4.27680236e-04, -9.99967277e-01, -8.08449183e-03, ?4.79539810e-02],
+? ? ? ? [-7.21062673e-03, ?8.08119867e-03, -9.99941289e-01, -5.51710330e-02],
+? ? ? ? [ 9.99973893e-01, ?4.85948578e-04, -7.20693357e-03, -2.88417109e-01],
+? ? ? ? [ 0.00000000e+00, ?0.00000000e+00, ?0.00000000e+00, ?1.00000000e+00]]
+
+nus:（6021）
+/dataset/nus_processed_CMRNet/sequences/scene-0922/map/map-scene-0922_0.1.pcd
+/dataset/nus_processed_CMRNet/sequences/scene-0922/image
+lidar-相机变换：每一帧有微小不同，存在/dataset/nus_processed_CMRNet/sequences/scene-0922/Pc.npy中。
+
+lyft5: (6001)
+/dataset/lyft5/sequences/host-a004-lidar0-1233944976297786786-1233945001198600096/map/map-host-a004-lidar0-1233944976297786786-1233945001198600096_0.1.pcd
+/dataset/lyft5/sequences/host-a004-lidar0-1233944976297786786-1233945001198600096/image
+lidar-相机变换：[[ 0, -1,  0,  0],
+ [ 0,  0, -1,  0],
+ [ 1 , 0,  0 , 0],
+ [ 0,  0,  0,  1]]
+
+waymo: (6001)
+/dataset/waymo/val_proc/00/map_0.1.pcd
+/dataset/waymo/val_proc/00/images
+lidar-相机变换：[[ 0, -1,  0,  0],
+ [ 0,  0, -1,  0],
+ [ 1 , 0,  0 , 0],
+ [ 0,  0,  0,  1]]
+
+argoverse: (6020)
+/dataset/argoverse-lidar/argoverse-tracking/train4/2c07fcda-6671-3ac0-ac23-4a232e0e031e/map.pcd
+/dataset/argoverse-tracking/train4/2c07fcda-6671-3ac0-ac23-4a232e0e031e/image_2
+lidar-相机变换：[[ 0, -1,  0,  0],
+ [ 0,  0, -1,  0],
+ [ 1 , 0,  0 , 0],
+ [ 0,  0,  0,  1]]
+
+
+ KITTI:
+[[718.85601807,   0. ,        607.19281006],
+ [  0. ,        718.85601807, 185.21569824],
+ [  0. ,          0.  ,         1.        ]]
+
+nuscenes:
+[[1266.417203046554, 0.0, 816.2670197447984],
+[0.0, 1266.417203046554, 491.50706579294757],
+[0.0, 0.0, 1.0]]
+
+Argoverse:
+[[1.38924148e+03， 0.00000000e+00， 9.62342165e+02]，
+ [0.00000000e+00， 1.38924148e+03， 6.05814069e+02]，
+ [0.00000000e+00， 0.00000000e+00， 1.00000000e+00]]
+
+waymo：
+[[2.05904714e+03， 0.00000000e+00， 9.35124808e+02]，
+ [0.00000000e+00， 2.05904714e+03， 6.35052475e+02]，
+ [0.00000000e+00， 0.00000000e+00， 1.00000000e+00]]
+
+lyft5：
+[[881.43876801, 0, 624.59698979], [0.0, 881.43876801, 526.081830325], [0.0, 0.0, 1.0]]
