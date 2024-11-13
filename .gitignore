@@ -92,3 +92,5 @@ log*/*
 *.html
 /make3.md
 /unzip_4seasons.py
+/vis3d
+/pytorch3d
