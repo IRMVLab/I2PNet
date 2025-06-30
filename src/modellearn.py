@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from pointnet_util import PointNetSetAbstraction, index_points
-# from pointconv_util import PointNetSaModule
 import numpy as np
 import torch.nn.functional as F
 import os
@@ -12,10 +11,9 @@ import os
 #from src.config import I2PNetConfig as cfg
 from src.modules.basicConv import Conv2d, Conv1d, createCNNs
 from src.modules.pointnet2_module import SetUpconvModule
-from src.modules.MainModules import CostVolume, FlowPredictor, PoseHead, ProjectMask, DelayWeight, MaskCostVolume, \
-    CrossCostVolume, CrossAttention, SelfAttention, AllCostVolume
-from src.modules.HRegNet2 import SimCrossVolume, SimMask
-from src.modules.pointconv_modules import PointConv
+from src.modules.MainModules import CostVolume, FlowPredictor, PoseHead, ProjectMask, DelayWeight
+
+
 import src.modules.warp_utils as warp_utils
 import src.utils as utils
 from src.config import I2PNetConfig as cfg_default
@@ -35,46 +33,26 @@ class RegNet_v2(nn.Module):
         #print(cfg.lidar_feature_size + 3)
 
         lidar_mlps = cfg.lidar_encoder_mlps
-        if cfg.pointconv_backbone:
-            self.LiDAR_lv1 = PointConv(
-                npoint=lidar_layer_points[0], radius=0.5, nsample=cfg.lidar_group_samples[0],
-                in_channel=cfg.lidar_feature_size + 3, mlp=lidar_mlps[0])
 
-            self.LiDAR_lv2 = PointConv(
-                npoint=lidar_layer_points[1], radius=0.5, nsample=cfg.lidar_group_samples[1],
-                in_channel=lidar_mlps[0][-1] + 3, mlp=lidar_mlps[1])
+        self.LiDAR_lv1 = PointNetSetAbstraction(
+            npoint=lidar_layer_points[0], radius=0.5, nsample=cfg.lidar_group_samples[0],
+            in_channel=cfg.lidar_feature_size + 3, mlp=lidar_mlps[0], group_all=False)
 
-            self.LiDAR_lv3 = PointConv(
-                npoint=lidar_layer_points[2], radius=1.0, nsample=cfg.lidar_group_samples[2],
-                in_channel=lidar_mlps[1][-1] + 3, mlp=lidar_mlps[2])
+        self.LiDAR_lv2 = PointNetSetAbstraction(
+            npoint=lidar_layer_points[1], radius=0.5, nsample=cfg.lidar_group_samples[1],
+            in_channel=lidar_mlps[0][-1] + 3, mlp=lidar_mlps[1], group_all=False)
 
-            self.LiDAR_lv4 = PointConv(
-                npoint=lidar_layer_points[3], radius=2.0, nsample=cfg.lidar_group_samples[3],
-                in_channel=lidar_mlps[2][-1] + 3, mlp=lidar_mlps[3])
+        self.LiDAR_lv3 = PointNetSetAbstraction(
+            npoint=lidar_layer_points[2], radius=1.0, nsample=cfg.lidar_group_samples[2],
+            in_channel=lidar_mlps[1][-1] + 3, mlp=lidar_mlps[2], group_all=False)
 
-            self.layer_idx = PointConv(
-                npoint=lidar_layer_points[3], radius=2.0, nsample=cfg.lidar_group_samples[4],
-                in_channel=cfg.cost_volume_mlps[-1][-1] + 3, mlp=lidar_mlps[4])
-        else:
-            self.LiDAR_lv1 = PointNetSetAbstraction(
-                npoint=lidar_layer_points[0], radius=0.5, nsample=cfg.lidar_group_samples[0],
-                in_channel=cfg.lidar_feature_size + 3, mlp=lidar_mlps[0], group_all=False)
+        self.LiDAR_lv4 = PointNetSetAbstraction(
+            npoint=lidar_layer_points[3], radius=2.0, nsample=cfg.lidar_group_samples[3],
+            in_channel=lidar_mlps[2][-1] + 3, mlp=lidar_mlps[3], group_all=False)
 
-            self.LiDAR_lv2 = PointNetSetAbstraction(
-                npoint=lidar_layer_points[1], radius=0.5, nsample=cfg.lidar_group_samples[1],
-                in_channel=lidar_mlps[0][-1] + 3, mlp=lidar_mlps[1], group_all=False)
-
-            self.LiDAR_lv3 = PointNetSetAbstraction(
-                npoint=lidar_layer_points[2], radius=1.0, nsample=cfg.lidar_group_samples[2],
-                in_channel=lidar_mlps[1][-1] + 3, mlp=lidar_mlps[2], group_all=False)
-
-            self.LiDAR_lv4 = PointNetSetAbstraction(
-                npoint=lidar_layer_points[3], radius=2.0, nsample=cfg.lidar_group_samples[3],
-                in_channel=lidar_mlps[2][-1] + 3, mlp=lidar_mlps[3], group_all=False)
-
-            self.layer_idx = PointNetSetAbstraction(
-                npoint=lidar_layer_points[3], radius=2.0, nsample=cfg.lidar_group_samples[4],
-                in_channel=cfg.cost_volume_mlps[-1][-1] + 3, mlp=lidar_mlps[4], group_all=False)
+        self.layer_idx = PointNetSetAbstraction(
+            npoint=lidar_layer_points[3], radius=2.0, nsample=cfg.lidar_group_samples[4],
+            in_channel=cfg.cost_volume_mlps[-1][-1] + 3, mlp=lidar_mlps[4], group_all=False)
 
         self.RGB_net1 = createCNNs(cfg.rgb_encoder_channels[0][0], cfg.rgb_encoder_channels[0][1],
                                    cfg.rgb_encoder_channels[0][2])
@@ -86,81 +64,28 @@ class RegNet_v2(nn.Module):
                                    cfg.rgb_encoder_channels[2][2])
         # self.RGB_net3.apply(self.init_weights)
         ##########################################################
-        if cfg.saca_pre:
-            self.norm1 = nn.LayerNorm(cfg.rgb_encoder_channels[-1][1][-1])
-            self.SA = SelfAttention(cfg.rgb_encoder_channels[-1][1][-1])
-            self.norm2 = nn.LayerNorm(cfg.rgb_encoder_channels[-1][1][-1])
-            self.CA = CrossAttention(cfg.rgb_encoder_channels[-1][1][-1])
-        if cfg.cross_cv:
-            self.cost_volume1 = CrossCostVolume(nsample=cfg.cost_volume_nsamples[0],
-                                                rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                                lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
-                                                mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1])
-            self.cost_volume2 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
-                                           nsample_q=cfg.cost_volume_nsamples[1][1],
-                                           rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                           lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
-                                           mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
-                                           is_training=self.training, bn_decay=bn_decay,
-                                           bn=True, pooling='max', knn=True,
-                                           corr_func=cfg.cost_volume_corr_func,
-                                           backward_validation=cfg.backward_validation[1],
-                                           max_cost=cfg.max_cost)
-        elif cfg.sim_cv:
-            self.cost_volume1 = SimCrossVolume(rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                               lidar_in_channels=lidar_mlps[-3][-1],
-                                               nsample=16,
-                                               img_nbr_kernel=3,
-                                               mlp3=cfg.cost_volume_mlps[0])
-            self.cost_volume2 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
-                                           nsample_q=cfg.cost_volume_nsamples[1][1],
-                                           rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                           lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
-                                           mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
-                                           is_training=self.training, bn_decay=bn_decay,
-                                           bn=True, pooling='max', knn=True,
-                                           corr_func=cfg.cost_volume_corr_func,
-                                           backward_validation=cfg.backward_validation[1],
-                                           max_cost=cfg.max_cost)
-        elif cfg.allcv:
-            self.cost_volume1 = AllCostVolume(nsample=cfg.cost_volume_nsamples[0],
-                                              rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                              lidar_in_channels=lidar_mlps[-3][-1],
-                                              mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1])
-            self.cost_volume2 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
-                                           nsample_q=cfg.cost_volume_nsamples[1][1],
-                                           rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                           lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
-                                           mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
-                                           is_training=self.training, bn_decay=bn_decay,
-                                           bn=True, pooling='max', knn=True,
-                                           corr_func=cfg.cost_volume_corr_func,
-                                           backward_validation=cfg.backward_validation[1],
-                                           max_cost=cfg.max_cost,
-                                           backward_fc=cfg.backward_fc)
-        else:
-            self.cost_volume1 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
-                                           nsample_q=cfg.cost_volume_nsamples[1][0],
-                                           rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                           lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
-                                           mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
-                                           is_training=self.training, bn_decay=bn_decay,
-                                           bn=True, pooling='max', knn=True,
-                                           corr_func=cfg.cost_volume_corr_func,
-                                           backward_validation=cfg.backward_validation[0],
-                                           max_cost=cfg.max_cost,
-                                           backward_fc=cfg.backward_fc)
-            self.cost_volume2 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
-                                           nsample_q=cfg.cost_volume_nsamples[1][1],
-                                           rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                           lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
-                                           mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
-                                           is_training=self.training, bn_decay=bn_decay,
-                                           bn=True, pooling='max', knn=True,
-                                           corr_func=cfg.cost_volume_corr_func,
-                                           backward_validation=cfg.backward_validation[1],
-                                           max_cost=cfg.max_cost,
-                                           backward_fc=cfg.backward_fc)
+        self.cost_volume1 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
+                                        nsample_q=cfg.cost_volume_nsamples[1][0],
+                                        rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
+                                        lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
+                                        mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
+                                        is_training=self.training, bn_decay=bn_decay,
+                                        bn=True, pooling='max', knn=True,
+                                        corr_func=cfg.cost_volume_corr_func,
+                                        backward_validation=cfg.backward_validation[0],
+                                        max_cost=cfg.max_cost,
+                                        backward_fc=cfg.backward_fc)
+        self.cost_volume2 = CostVolume(radius=10.0, nsample=cfg.cost_volume_nsamples[0],
+                                        nsample_q=cfg.cost_volume_nsamples[1][1],
+                                        rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
+                                        lidar_in_channels=lidar_mlps[-3][-1],  # LF3 dim
+                                        mlp1=cfg.cost_volume_mlps[0], mlp2=cfg.cost_volume_mlps[1],
+                                        is_training=self.training, bn_decay=bn_decay,
+                                        bn=True, pooling='max', knn=True,
+                                        corr_func=cfg.cost_volume_corr_func,
+                                        backward_validation=cfg.backward_validation[1],
+                                        max_cost=cfg.max_cost,
+                                        backward_fc=cfg.backward_fc)
 
         ##########################################################
 
@@ -221,40 +146,22 @@ class RegNet_v2(nn.Module):
                                 sigmoid=cfg.mask_sigmoid,
                                 maxhead=cfg.max_head)
 
-        # if cfg.CA:
-        #     self.CA3 = CrossAttention()
+
 
         if cfg.use_projection_mask:
             if cfg.layer_mask[0]:
-                if cfg.sim_backbone:
-                    self.l4_projection_mask = SimMask(rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                                      lidar_in_channels=lidar_mlps[-3][-1],
-                                                      nsample=16,
-                                                      img_nbr_kernel=3,
-                                                      mlp3=cfg.projection_mask_mlps[0])
-                else:
-                    self.l4_projection_mask = ProjectMask(lidar_mlps[-1][-1]  # resampled l4 EM
-                                                          + lidar_mlps[-2][-1],  # l4 feature
-                                                          cfg.projection_mask_mlps[0], cfg.mask_sigmoid)
+
+                self.l4_projection_mask = ProjectMask(lidar_mlps[-1][-1]  # resampled l4 EM
+                                                        + lidar_mlps[-2][-1],  # l4 feature
+                                                        cfg.projection_mask_mlps[0], cfg.mask_sigmoid)
                 self.l4_delay = DelayWeight(cfg.mask_delay_step, cfg.mask_delay, cfg.ab_delay)
             if cfg.layer_mask[1]:
-                if cfg.sim_backbone:
-                    self.l3_projection_mask = SimMask(rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                                      lidar_in_channels=lidar_mlps[-3][-1],
-                                                      nsample=16,
-                                                      img_nbr_kernel=3,
-                                                      mlp3=cfg.projection_mask_mlps[1])
-                else:
-                    self.l3_projection_mask = ProjectMask(lidar_mlps[-3][-1] +  # l3 feature
-                                                          cfg.flow_predictor_mlps[1][-1],  # l3 refined EM
-                                                          cfg.projection_mask_mlps[1], cfg.mask_sigmoid)
+
+                self.l3_projection_mask = ProjectMask(lidar_mlps[-3][-1] +  # l3 feature
+                                                        cfg.flow_predictor_mlps[1][-1],  # l3 refined EM
+                                                        cfg.projection_mask_mlps[1], cfg.mask_sigmoid)
                 self.l3_delay = DelayWeight(cfg.mask_delay_step, cfg.mask_delay, cfg.ab_delay)
-        elif cfg.one_head_mask:
-            self.mask_costvolume = MaskCostVolume(rgb_in_channels=cfg.rgb_encoder_channels[-1][1][-1],
-                                                  lidar_in_channels=lidar_mlps[-3][-1],
-                                                  mlp1=[128, 128], img_size=418)
-            self.proj_mask = ProjectMask(lidar_mlps[-3][-1],
-                                         cfg.projection_mask_mlps[0])
+
 
         ##########################################################
         # loss learnable parameters
@@ -320,10 +227,8 @@ class RegNet_v2(nn.Module):
         RF3_index = RF3_index.permute(0, 2, 1)  # [B,418,3]
 
         # project to the normalization camera plane
-        if cfg.efgh:
-            lidar_uv, lidar_z, LF3 = warp_utils.projection_initial_EFGH(P3, calib, LF3)
-        else:
-            lidar_uv, lidar_z, LF3 = warp_utils.projection_initial(P3, None, None, None, LF3)
+
+        lidar_uv, lidar_z, LF3 = warp_utils.projection_initial(P3, None, None, None, LF3)
 
         lidar_uv = lidar_uv.reshape(B, -1, 3)
 
@@ -331,34 +236,14 @@ class RegNet_v2(nn.Module):
 
         RF3 = RF3.reshape(B, C, H * W).permute(0, 2, 1)  # B,N,C
 
-        if cfg.saca_pre:
-            # SA & CA
-            RF3_cv1_n = self.norm1(RF3)  # B,M,C
-            LF3_cv1_n = self.norm1(LF3.permute(0, 2, 1))  # B,N,C
-            RF3_cv1_sa = self.SA(RF3_cv1_n)
-            LF3_cv1_sa = self.SA(LF3_cv1_n)
-            RF3_cv1_n2 = self.norm2(RF3_cv1_sa)
-            LF3_cv1_n2 = self.norm2(LF3_cv1_sa)
-            RF3_cv1 = self.CA(RF3_cv1_n2, LF3_cv1_n2)
-            LF3_cv1 = self.CA(LF3_cv1_n2, RF3_cv1_n2)
-        else:
-            RF3_cv1 = RF3
-            LF3_cv1 = LF3.permute(0, 2, 1)
+
+        RF3_cv1 = RF3
+        LF3_cv1 = LF3.permute(0, 2, 1)
 
         # B,N,C embedding cost volume
-        if cfg.sim_cv:
-            RF3_bchw = RF3_cv1.permute(0, 2, 1).reshape(B, C, H, W)
-            RF3_index_bchw = RF3_index.permute(0, 2, 1).reshape(B, 3, H, W)
-            concat_4 = self.cost_volume1(lidar_uv, LF3_cv1,
-                                         RF3_bchw, RF3_index_bchw, lidar_z)
-        else:
-            concat_4 = self.cost_volume1(lidar_uv, LF3_cv1, RF3_index, RF3_cv1, lidar_z)  # [B,256,64]=[B,N,C]
 
-        if cfg.one_head_mask:
-            # TODO: match new cv1 feature
-            feature_cost = self.mask_costvolume(LF3.permute(0, 2, 1), RF3)
-            p3_mask = self.proj_mask(None, feature_cost)
-            p4_mask = index_points(p3_mask, fps_idx_4)
+        concat_4 = self.cost_volume1(lidar_uv, LF3_cv1, RF3_index, RF3_cv1, lidar_z)  # [B,256,64]=[B,N,C]
+
 
         # resample the cost volume to l4 B,C,N
         P4, l4_points_f1_cost_volume, _, _, _ = self.layer_idx(P3, concat_4.permute(0, 2, 1), sample_idx=fps_idx_4, raw_feat_point=cfg.raw_feat_point, raw_xyz=P3_raw)
@@ -368,18 +253,12 @@ class RegNet_v2(nn.Module):
         # mask F+E [B,N,C]
         l4_cost_volume_w = self.flow_predictor0(LF4.permute(0, 2, 1), None, l4_points_predict)
 
-        # TODO: l4 prediction # TODO: EFGH projection
+        # TODO: l4 prediction 
         l4_projection_mask = None
         if cfg.use_projection_mask and cfg.layer_mask[0]:
-            if cfg.sim_backbone:
-                RF3_bchw = RF3.permute(0, 2, 1).reshape(B, C, H, W)
-                RF3_index_bchw = RF3_index.permute(0, 2, 1).reshape(B, 3, H, W)
-                l4_projection_mask = index_points(self.l4_projection_mask(lidar_uv, LF3_cv1,
-                                                                          RF3_bchw, RF3_index_bchw, lidar_z), fps_idx_4)
-            else:
-                l4_projection_mask = self.l4_projection_mask(LF4.permute(0, 2, 1), l4_points_predict)
-        elif cfg.one_head_mask:
-            l4_projection_mask = p4_mask
+
+            l4_projection_mask = self.l4_projection_mask(LF4.permute(0, 2, 1), l4_points_predict)
+
         if gt_project is not None:
             # gt_project [B,N,2]
             gt_project_l1 = index_points(gt_project, fps_idx_1)
@@ -396,22 +275,10 @@ class RegNet_v2(nn.Module):
         if cfg.ground_truth_mask_layer[0]:
             assert l4_projection_mask is not None
 
-        if cfg.cmr_direct_filter:
-            lidar_uv_coarse, lidar_z_coarse, _ = warp_utils.projection_initial(P4, None, None, None, LF3)
-            image_uv = torch.bmm(intrinsic_3, lidar_uv_coarse.permute(0, 2, 1))  # B,3,N
-            # B,N
-            lidar_z_coarse = lidar_z_coarse.squeeze(-1)
-            direct_mask = torch.ge(image_uv[:, 0], 0) & torch.lt(image_uv[:, 0], W) & \
-                          torch.ge(image_uv[:, 1], 0) & torch.lt(image_uv[:, 1], H) & torch.gt(lidar_z_coarse, 0.1)
-            direct_mask = direct_mask.float().unsqueeze(-1)  # B,N,1
-            l4_cost_volume_w_direct = l4_cost_volume_w * direct_mask + -1e10 * (1. - direct_mask)
-            result_4_real, result_4_dual, _ = self.l4_head(l4_points_predict, l4_cost_volume_w_direct,
-                                                           P4.permute(0, 2, 1), LF4.permute(0, 2, 1),
-                                                           l4_projection_mask)
-        else:
-            result_4_real, result_4_dual, _ = self.l4_head(l4_points_predict, l4_cost_volume_w,
-                                                           P4.permute(0, 2, 1), LF4.permute(0, 2, 1),
-                                                           l4_projection_mask)
+
+        result_4_real, result_4_dual, _ = self.l4_head(l4_points_predict, l4_cost_volume_w,
+                                                        P4.permute(0, 2, 1), LF4.permute(0, 2, 1),
+                                                        l4_projection_mask)
         if gt_project is not None and cfg.ground_truth_mask_layer[0]:
             l4_projection_mask = l4_projection_mask_predict
         # result_4_real = torch.squeeze(result_4_real, dim=1)
@@ -426,10 +293,8 @@ class RegNet_v2(nn.Module):
         H3_trans = torch.cat([torch.zeros((B, 1), device=device),
                               decalib_quat_dual4], -1).reshape(B, 4)
         # p3_warp = q4*[0,p3]*q4'+[0,t4]
-        if cfg.efgh:
-            lidar_uv, lidar_z, LF3 = warp_utils.warp_quat_EFGH(P3, decalib_quat_real4, H3_trans, calib, LF3)
-        else:
-            lidar_uv, lidar_z, LF3 = warp_utils.warp_quat(P3, decalib_quat_real4,
+
+        lidar_uv, lidar_z, LF3 = warp_utils.warp_quat(P3, decalib_quat_real4,
                                                           H3_trans, None, None, LF3)
         lidar_uv = lidar_uv.reshape(B, -1, 3)
         # sampled_points = lidar_uv.shape[1]
@@ -460,15 +325,9 @@ class RegNet_v2(nn.Module):
         # TODO: l3 prediction
         l3_prediction_mask = None
         if cfg.use_projection_mask and cfg.layer_mask[1]:
-            if cfg.sim_backbone:
-                RF3_bchw = RF3.permute(0, 2, 1).reshape(B, C, H, W)
-                RF3_index_bchw = RF3_index.permute(0, 2, 1).reshape(B, 3, H, W)
-                l3_prediction_mask = self.l3_projection_mask(lidar_uv, LF3_cv1,
-                                                             RF3_bchw, RF3_index_bchw, lidar_z)
-            else:
-                l3_prediction_mask = self.l3_projection_mask(LF3.permute(0, 2, 1), l3_cost_volume_predict)
-        elif cfg.one_head_mask:
-            l3_prediction_mask = p3_mask
+
+            l3_prediction_mask = self.l3_projection_mask(LF3.permute(0, 2, 1), l3_cost_volume_predict)
+
         if gt_project is not None and cfg.ground_truth_mask_layer[1]:
             # gt_project [B,N,2]
             l3_prediction_mask_predict = l3_prediction_mask
@@ -482,21 +341,10 @@ class RegNet_v2(nn.Module):
                                                                    intrinsic, rgb_img.shape[2:],
                                                                    decalib_quat_real4, decalib_quat_dual4), 2)
 
-        if cfg.cmr_direct_filter:
-            with torch.no_grad():
-                image_uv = torch.bmm(intrinsic_3, lidar_uv.permute(0, 2, 1))  # B,3,N
-                # B,N
-                direct_mask = torch.ge(image_uv[:, 0], 0) & torch.lt(image_uv[:, 0], W) & \
-                          torch.ge(image_uv[:, 1], 0) & torch.lt(image_uv[:, 1], H) & torch.gt(lidar_z.squeeze(-1), 0.1)
-                direct_mask = direct_mask.float().unsqueeze(-1)  # B,N,1
-            l3_cost_volume_w_direct = l3_cost_volume_w * direct_mask + -1e10 * (1. - direct_mask)
-            result_3_real, result_3_dual, W_l3_cost_volume = self.l3_head(l3_cost_volume_predict, l3_cost_volume_w_direct,
-                                                                          P3.permute(0, 2, 1), LF3.permute(0, 2, 1),
-                                                                          l3_prediction_mask)
-        else:
-            result_3_real, result_3_dual, W_l3_cost_volume = self.l3_head(l3_cost_volume_predict, l3_cost_volume_w,
-                                                                      P3.permute(0, 2, 1), LF3.permute(0, 2, 1),
-                                                                      l3_prediction_mask)
+
+        result_3_real, result_3_dual, W_l3_cost_volume = self.l3_head(l3_cost_volume_predict, l3_cost_volume_w,
+                                                                    P3.permute(0, 2, 1), LF3.permute(0, 2, 1),
+                                                                    l3_prediction_mask)
         if gt_project is not None and cfg.ground_truth_mask_layer[1]:
             l3_prediction_mask = l3_prediction_mask_predict
 

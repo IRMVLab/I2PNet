@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from pointnet_util import PointNetSetAbstraction, index_points
-# from pointconv_util import PointNetSaModule
 import numpy as np
 import torch.nn.functional as F
 import os

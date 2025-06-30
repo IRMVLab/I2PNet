@@ -145,4 +145,3 @@ class I2PNetConfig:
     focal_gamma = 2
 
     ##########################################
-    efgh = False

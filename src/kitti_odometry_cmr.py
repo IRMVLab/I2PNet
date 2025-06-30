@@ -17,7 +17,6 @@ import pickle as pkl
 import h5py
 import pandas as pd
 
-from data_preprocess.CMRNet_script.depth_map_script.py_visibility import filter_point
 
 # import open3d
 
@@ -230,7 +229,7 @@ class Kitti_Odometry_Dataset(Dataset):
 
         self.large_sparse = False
 
-        self.vis_filter = False
+        # self.vis_filter = False
 
         self.sample_point = 8192  # default 8192
 
@@ -524,10 +523,6 @@ class Kitti_Odometry_Dataset(Dataset):
             # sn_np = self.jitter_point_cloud(sn_np)
             rgb_img = self.augment_img(rgb_img)
 
-        if self.vis_filter:
-            filter_idx, _ = filter_point(pc_np, intrinsic, h, w, h // 2, w // 2, init_extrinsic)
-            pc_np = pc_np[:, filter_idx]
-            intensity_np = intensity_np[:, filter_idx]
 
         N = pc_np.shape[1]
         if N >= self.sample_point:

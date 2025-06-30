@@ -20,6 +20,12 @@ cd pointnet2
 python setup.py install
 cd ../
 ```
+install projection-aware operators
+```shell
+cd src/projectPN/fused_conv_select
+python setup.py install
+cd ../../../
+```
 ## Data Preprocessing
 ### KITTI Preprocessing
 Download [KITTI Odometry](https://www.cvlibs.net/datasets/kitti/eval_odometry.php) sequences 00, 03, 05, 06, 07, 08, 09 and 10. And process the data sequentially as follows: 
@@ -117,3 +123,4 @@ python evaluation_cmrresult.py --log_dir <LOG>
 # Acknowledgements
 * Implementation of PointNet++ is based on [Pointnet2_PyTorch](https://github.com/erikwijmans/Pointnet2_PyTorch).
 * Implementation of data preprocessing inherited from [CMRNet](https://github.com/cattaneod/CMRNet).
+* Implementation of projection-aware operators from [EfficientLO-Net](https://github.com/IRMVLab/EfficientLO-Net).

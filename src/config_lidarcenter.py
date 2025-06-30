@@ -21,8 +21,6 @@ class I2PNetConfig:
 
     lidar_group_samples = [32, 16, 16, 16, 16]
 
-    pointconv_backbone = False
-
     lidar_encoder_mlps_planA = [
         [8, 16, 32],
         [32, 32, 64],
@@ -41,11 +39,7 @@ class I2PNetConfig:
     lidar_encoder_mlps = lidar_encoder_mlps_planB
     ####################################
     # cost volume
-    cross_cv = False
-    sim_cv = False  # Hregnet
-    saca_pre = False  # SA & CA
     backward_fc = False
-    allcv = False
     cost_volume_mlps = [  # mlp1 for pi features processing
         [128, 64, 64],
         # mlp2 (mlp21,mlp22 are the same) for generating weights in pi features and pp features
@@ -82,15 +76,11 @@ class I2PNetConfig:
     #####################################
     # projection_mask
     use_projection_mask = False
-    sim_backbone = False
     # all use_proj_mask is False, then all the below is invalid
     layer_mask = [False,  # l4 mask
                   True]  # l3 mask
     projection_mask_mlps = [[128, 64], [128, 64]]
     mask_sigmoid = False
-    one_head_mask = False  # one head mask using the first mlp dim of projection_mask_mlps
-
-    # one_head_mask_eval = False  # one head mask using the first mlp dim of projection_mask_mlps
     ####################################
     # gt_proj
     ground_truth_projection_mask = False
@@ -113,7 +103,3 @@ class I2PNetConfig:
     focal_gamma = 2
 
     ##########################################
-    efgh = False
-
-    #########################################
-    cmr_direct_filter = False
