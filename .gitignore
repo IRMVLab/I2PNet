@@ -94,3 +94,4 @@ log*/*
 /unzip_4seasons.py
 /vis3d
 /pytorch3d
+/test
