@@ -142,49 +142,21 @@ if __name__ == '__main__':
         local_intensity = vox_intensity.clone()
         local_map = torch.mm(pose, local_map).t()  # (N,4)
 
-        # y \in [-25,25] x \in [-10,100]
 
-        # indexes = local_map[:, 1] > -25.
-        # indexes = indexes & (local_map[:, 1] < 25.)
-        # indexes = indexes & (local_map[:, 0] > -10.)
-        # indexes = indexes & (local_map[:, 0] < 100.)
         # y \in [-10,10] x \in [-5,15]
-        indexes = local_map[:, 1] > -10.
-        indexes = indexes & (local_map[:, 1] < 10.)
-        indexes = indexes & (local_map[:, 0] > -5.)
-        indexes = indexes & (local_map[:, 0] < 15.)
+        # indexes = local_map[:, 1] > -10.
+        # indexes = indexes & (local_map[:, 1] < 10.)
+        # indexes = indexes & (local_map[:, 0] > -5.)
+        # indexes = indexes & (local_map[:, 0] < 15.)
+        
         # y \in [-25,25] x \in [-10,100]
-        # indexes = local_map[:, 1] > -25.
-        # indexes = indexes & (local_map[:, 1] < 25.)
-        # indexes = indexes & (local_map[:, 0] > -10.)
-        # indexes = indexes & (local_map[:, 0] < 100.)
+        indexes = local_map[:, 1] > -25.
+        indexes = indexes & (local_map[:, 1] < 25.)
+        indexes = indexes & (local_map[:, 0] > -10.)
+        indexes = indexes & (local_map[:, 0] < 100.)
 
-        # local_map = local_map[indexes].cpu().numpy()[:,:3]  # (N,3)
-        # intensity = local_intensity[:, indexes].cpu().numpy().T  # (N,1)
-
-        # local_map = local_map[indexes]  # (N,3)
-        # intensity = local_intensity[:, indexes].T  # (N,1)
         local_map = local_map[indexes].t()  # (3,N)
         local_intensity = local_intensity[:, indexes]  # (1,N)
-
-        # We do not perform this to transform it to the camera coordination
-        # in the dataset preprocessing
-
-        # local_map = torch.mm(velo2cam2, local_map.t())
-        # local_map = local_map[[2, 0, 1, 3], :] # [z,x,y,1]
-
-        # pcd = o3.PointCloud()
-        # pcd.points = o3.Vector3dVector(local_map[:,:3].numpy())
-        # o3.write_point_cloud(f'{i:06d}.pcd', pcd)
-
-        # pcd = o3.geometry.PointCloud()
-        # pcd.points = o3.utility.Vector3dVector(local_map)
-        # pcd.colors = o3.utility.Vector3dVector(np.concatenate([intensity,intensity,intensity],axis=1))
-
-        # pcd = pcd.voxel_down_sample(0.3)
-
-        # local_map = torch.from_numpy(np.asarray(pcd.points).T).to(torch.float16)
-        # local_intensity = torch.from_numpy(np.asarray(pcd.colors)[:,:1].T).to(torch.float16)
 
         tbar.set_postfix({"point":local_map.shape[1]})
         # store in the h5 file to save the storage

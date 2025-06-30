@@ -12,7 +12,7 @@ import os
 from src.config_proj import I2PNetConfig as cfg_default
 from src.modules.basicConv import createCNNs
 
-from src.projectPN.PPBackbone import CostVolume, ProjSetUpconvModule, ProjectPointNet,PoseHead,FlowPredictor
+from src.projectPN.PPBackbone_center import CostVolume, ProjSetUpconvModule, ProjectPointNet,PoseHead,FlowPredictor
 from src.projectPN.utils import check_valid, project, get_idx_cuda, project_seq
 import src.modules.warp_utils as warp_utils
 import src.utils as utils
@@ -31,12 +31,17 @@ class RegNet_v2(nn.Module):
                          for s in np.cumprod(cfg.stride_Hs)]
         self.lidar_Ws = [int(np.ceil(cfg.init_W / s))
                          for s in np.cumprod(cfg.stride_Ws)]
-
+        print("using raw point feat:", cfg.raw_feat_point)
+        print("using intens:", cfg.using_intens)
+        if cfg.using_intens:
+            add_num = 4
+        else:
+            add_num = 3
         self.LiDAR_lv1 = ProjectPointNet(H=cfg.init_H, W=cfg.init_W,
                                          out_h=self.lidar_Hs[0], out_w=self.lidar_Ws[0],
                                          stride_H=cfg.stride_Hs[0], stride_W=cfg.stride_Ws[0],
                                          kernel_size=cfg.kernel_sizes[0], nsample=cfg.lidar_group_samples[0],
-                                         distance=cfg.down_conv_dis[0], in_channel=cfg.lidar_feature_size + 3,
+                                         distance=cfg.down_conv_dis[0], in_channel=cfg.lidar_feature_size + add_num,
                                          mlp=cfg.lidar_encoder_mlps[0],use_trans=cfg.use_trans,
                                          use_bn_p=cfg.use_bn_p,
                                          use_bn_input=cfg.use_bn_input
@@ -249,11 +254,10 @@ class RegNet_v2(nn.Module):
             cfg.debug_timing.time("projection")
         # [B,H,W,3] [B,H,W,C]
         # lidar layers
-        #print("lidar_img shape:", lidar_img.shape)
-        P1_raw, P1, LF1, _, sample_idx_1 = self.LiDAR_lv1(lidar_img_raw, lidar_img, lidar_norm,cfg=cfg)
-        P2_raw, P2, LF2, _, sample_idx_2 = self.LiDAR_lv2(P1_raw, P1, LF1,cfg=cfg)
-        P3_raw, P3, LF3, _, sample_idx_3 = self.LiDAR_lv3(P2_raw, P2, LF2,cfg=cfg)  # LF3.shape[B,C,N]=[B,64,256]
-        P4_raw, P4, LF4, _, sample_idx_4 = self.LiDAR_lv4(P3_raw, P3, LF3,cfg=cfg)  # LF4.shape[B,C,N]=[B,128,64]
+        P1_raw, P1, LF1, _, sample_idx_1 = self.LiDAR_lv1.forward_center(lidar_img_raw, lidar_img, lidar_norm,cfg=cfg, using_intens=cfg.using_intens, raw_feat_point=cfg.raw_feat_point)
+        P2_raw, P2, LF2, _, sample_idx_2 = self.LiDAR_lv2(P1_raw, P1, LF1,cfg=cfg, raw_feat_point=cfg.raw_feat_point)
+        P3_raw, P3, LF3, _, sample_idx_3 = self.LiDAR_lv3(P2_raw, P2, LF2,cfg=cfg, raw_feat_point=cfg.raw_feat_point)  # LF3.shape[B,C,N]=[B,64,256]
+        P4_raw, P4, LF4, _, sample_idx_4 = self.LiDAR_lv4(P3_raw, P3, LF3,cfg=cfg, raw_feat_point=cfg.raw_feat_point)  # LF4.shape[B,C,N]=[B,128,64]
         if cfg.debug_time:
             cfg.debug_timing.time("point_ex")
         if cfg.debug and cfg.debug_count < cfg.debug_storage:
@@ -303,7 +307,7 @@ class RegNet_v2(nn.Module):
         if cfg.debug_time:
             cfg.debug_timing.time("cv1")
         # resample the cost volume to l4 B,H,W,C
-        _, _, l4_points_f1_cost_volume, _, _ = self.layer_idx(P3_raw, P3, concat_4, sample_idx=sample_idx_4,cfg=cfg)
+        _, _, l4_points_f1_cost_volume, _, _ = self.layer_idx(P3_raw, P3, concat_4, sample_idx=sample_idx_4,cfg=cfg, raw_feat_point=cfg.raw_feat_point)
         # E4_new
         l4_points_predict = l4_points_f1_cost_volume
 
@@ -326,75 +330,79 @@ class RegNet_v2(nn.Module):
         decalib_quat_dual4 = result_4_dual
         if cfg.debug_time:
             cfg.debug_timing.time("l4_reg")
+
         # layer 3  ################################################
         # [0,t4]
-        H3_trans = torch.cat([torch.zeros((B, 1), device=device),
-                              decalib_quat_dual4], -1).reshape(B, 4)
-        # p3_warp = q4*[0,p3]*q4'+[0,t4]
-
-        l3_nowarp_valid_mask = check_valid(P3_l4)  # B,N,1
-
-        P3_warped_l3 = warp_utils.warp_quat_xyz(P3_l4, decalib_quat_real4,
-                                                H3_trans) * l3_nowarp_valid_mask
-
+        
         # mask upsampling
         l3_cost_volume_w_upsample = self.set_upconv0_w_upsample(
-            P3_raw, P4_raw, P3, P4, l3_idx_n2, LF3, l4_cost_volume_w.view(B, H4, W4, -1),cfg=cfg)  # [B,H,W,64]
+            P3_raw, P4_raw, P3, P4, l3_idx_n2, LF3, l4_cost_volume_w.view(B, H4, W4, -1),cfg=cfg, raw_feat_point=cfg.raw_feat_point)  # [B,H,W,64]
 
         l3_cost_volume_upsample = self.set_upconv0_upsample(
-            P3_raw, P4_raw, P3, P4, l3_idx_n2, LF3, l4_points_predict,cfg=cfg)  # [B,H,W,64]
+            P3_raw, P4_raw, P3, P4, l3_idx_n2, LF3, l4_points_predict,cfg=cfg, raw_feat_point=cfg.raw_feat_point)  # [B,H,W,64]
         if cfg.debug_time:
             cfg.debug_timing.time("upsample")
-        # reproject [B,H,W,3] [B,H,W,C]
-        # P3_warped_proj, feats = project_seq(P3_warped_l3, [LF3_cv1, l3_cost_volume_upsample,
-        #                                                    l3_cost_volume_w_upsample], H3, W3)
-        # LF3_proj = LF3_cv1
-        # LF3_proj, l3_cost_volume_upsample, l3_cost_volume_w_upsample = feats
-        # P3_warped_n3 = P3_warped_proj.reshape(B, H3 * W3, 3)
 
-        lidar_z = P3_warped_l3[:, :, 2:]
-        lidar_uv = P3_warped_l3 / (lidar_z + 1e-10)
+        ### Here warp the point cloud
+        for iters in range(6):
+            if iters == 0:
+                decalib_quat_dual_iter = decalib_quat_dual4
+                decalib_quat_real_iter = decalib_quat_real4
+            else:
+                decalib_quat_dual_iter = decalib_quat_dual3
+                decalib_quat_real_iter = decalib_quat_real3
+            H3_trans = torch.cat([torch.zeros((B, 1), device=device),
+                                decalib_quat_dual_iter], -1).reshape(B, 4)
+            # p3_warp = q4*[0,p3]*q4'+[0,t4]
 
-        # sampled_points = lidar_uv.shape[1]
-        LF3_cv2 = LF3_cv1
+            l3_nowarp_valid_mask = check_valid(P3_l4)  # B,N,1
 
-        concat_3 = self.cost_volume2(P3_raw, lidar_uv, LF3_cv2, l3_idx_n2, RF3_index, RF3, lidar_z,cfg=cfg)
-        if cfg.debug_time:
-            cfg.debug_timing.time("cv2")
-        # predict refined embedding
-        l3_cost_volume_predict = self.flow_predictor0_predict(
-            LF3_cv2, l3_cost_volume_upsample.view(B, H3 * W3, -1), concat_3.view(B, H3 * W3, -1))
-        # predict refined mask
-        l3_cost_volume_w = self.flow_predictor0_w(
-            LF3_cv2, l3_cost_volume_w_upsample.view(B, H3 * W3, -1), l3_cost_volume_predict)
+            P3_warped_l3 = warp_utils.warp_quat_xyz(P3_l4, decalib_quat_real_iter,
+                                                    H3_trans) * l3_nowarp_valid_mask
+            
+            lidar_z = P3_warped_l3[:, :, 2:]
+            lidar_uv = P3_warped_l3 / (lidar_z + 1e-10)
 
-        valid_mask_l3 = check_valid(P3_raw).view(B, -1, 1)
+            # sampled_points = lidar_uv.shape[1]
+            LF3_cv2 = LF3_cv1
 
-        l3_cost_volume_w = l3_cost_volume_w * valid_mask_l3 + -1e10 * (1 - valid_mask_l3)
-        l3_prediction_mask = None
+            concat_3 = self.cost_volume2(P3_raw, lidar_uv, LF3_cv2, l3_idx_n2, RF3_index, RF3, lidar_z,cfg=cfg)
+            if cfg.debug_time:
+                cfg.debug_timing.time("cv2")
+            # predict refined embedding
+            l3_cost_volume_predict = self.flow_predictor0_predict(
+                LF3_cv2, l3_cost_volume_upsample.view(B, H3 * W3, -1), concat_3.view(B, H3 * W3, -1))
+            # predict refined mask
+            l3_cost_volume_w = self.flow_predictor0_w(
+                LF3_cv2, l3_cost_volume_w_upsample.view(B, H3 * W3, -1), l3_cost_volume_predict)
 
-        result_3_real, result_3_dual, W_l3_cost_volume = self.l3_head(l3_cost_volume_predict, l3_cost_volume_w,
-                                                                      P3_warped_l3, LF3_cv2,
-                                                                      l3_prediction_mask)
-        if cfg.debug_time:
-            cfg.debug_timing.time("l3_reg")
-        decalib_quat_real3 = result_3_real
-        decalib_quat_dual3 = result_3_dual
+            valid_mask_l3 = check_valid(P3_raw).view(B, -1, 1)
 
-        # q = q3*q4 <=> R = R3@R4
-        out_3_real = warp_utils.mul_q(decalib_quat_real3.view(B, 1, 4),
-                                      decalib_quat_real4.view(B, 1, 4))
+            l3_cost_volume_w = l3_cost_volume_w * valid_mask_l3 + -1e10 * (1 - valid_mask_l3)
+            l3_prediction_mask = None
 
-        # [0,t]
-        result_4_copy_trans = torch.cat((torch.zeros((B, 1), device=device),
-                                         decalib_quat_dual4), 1).view(B, 1, 4)
-        result_3_copy_trans = torch.cat((torch.zeros((B, 1), device=device),
-                                         decalib_quat_dual3), 1).view(B, 1, 4)
+            result_3_real, result_3_dual, W_l3_cost_volume = self.l3_head(l3_cost_volume_predict, l3_cost_volume_w,
+                                                                        P3_warped_l3, LF3_cv2,
+                                                                        l3_prediction_mask)
+            if cfg.debug_time:
+                cfg.debug_timing.time("l3_reg")
+            decalib_quat_real3 = result_3_real
+            decalib_quat_dual3 = result_3_dual
 
-        # q = q3*q4
-        # q3*[0,t4]*q3'+t3 <=> t = R3@t4+t3
-        out_3_dual = warp_utils.mul_q(decalib_quat_real3, result_4_copy_trans)  # B,1,4
-        out_3_dual = warp_utils.mul_q(out_3_dual, warp_utils.inv_q(decalib_quat_real3)) + result_3_copy_trans
+            # q = q3*q4 <=> R = R3@R4
+            out_3_real = warp_utils.mul_q(decalib_quat_real3.view(B, 1, 4),
+                                        decalib_quat_real_iter.view(B, 1, 4))
+
+            # [0,t]
+            result_4_copy_trans = torch.cat((torch.zeros((B, 1), device=device),
+                                            decalib_quat_dual_iter), 1).view(B, 1, 4)
+            result_3_copy_trans = torch.cat((torch.zeros((B, 1), device=device),
+                                            decalib_quat_dual3), 1).view(B, 1, 4)
+
+            # q = q3*q4
+            # q3*[0,t4]*q3'+t3 <=> t = R3@t4+t3
+            out_3_dual = warp_utils.mul_q(decalib_quat_real3, result_4_copy_trans)  # B,1,4
+            out_3_dual = warp_utils.mul_q(out_3_dual, warp_utils.inv_q(decalib_quat_real3)) + result_3_copy_trans
 
         out_3_real = torch.squeeze(out_3_real, dim=1)
         out_3_dual = torch.squeeze(out_3_dual, dim=1)

@@ -36,7 +36,7 @@ parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: G
 parser.add_argument('--abs_checkpoint_path', default=None, help='Model checkpoint path [default: None]')
 parser.add_argument('--checkpoint_path', default="model_rotation_best.pt", help='Model checkpoint path [default: None]')
 parser.add_argument('--log_dir', required=True, help='Dump dir to save model checkpoint [default: log]')
-parser.add_argument("--network", default="modellearn_proj", type=str, help="the network to train [default: modellearn]")
+parser.add_argument("--network", default="modellearn_proj_center", type=str, help="the network to train [default: modellearn]")
 parser.add_argument('--num_workers', type=int, default=8, help='Number of workers [default: 8]')
 parser.add_argument('--dataset', type=str, default="kd_corr_snr_proj", choices=["kitti", "nus_corr_nolidar", "kd_corr_nolidar",
                              ],

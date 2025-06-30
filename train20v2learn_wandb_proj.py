@@ -34,7 +34,7 @@ parser.add_argument('--save_rate', type=int, default=20, help='save report rate 
 parser.add_argument('--validate_rate', type=int, default=-1, help='validation rate (after n reports) [default: 80]')
 parser.add_argument('--lr', type=float, default=1e-3,
                     help='training initial learning rate [default: 0.001]')
-parser.add_argument("--network", default="modellearn_proj", type=str,
+parser.add_argument("--network", default="modellearn_proj_center", type=str,
                     help="the network to train [default: modellearn]")
 parser.add_argument('--num_workers', type=int, default=8, help='Number of workers [default: 8]')
 parser.add_argument('--dataset', type=str, default="kd_corr_snr",
