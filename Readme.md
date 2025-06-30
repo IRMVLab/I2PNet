@@ -50,6 +50,10 @@ python train20v2learn_wandb_proj.py --gpu 3 --dataset kd_corr_nolidar --modelcfg
 ```shell
 python evaluation_proj.py --dataset kd_corr_nolidar --modelcfg config_proj_lidarcenter --network modellearn_proj_center --log_dir <LOG>
 ```
+For evaluation with multiple iterations (currently set to 6 iters):
+```shell
+python evaluation_proj.py --dataset kd_corr_nolidar --modelcfg config_proj_lidarcenter_iter --network modellearn_proj_center_iter --log_dir <LOG>
+```
 
 ### nuScenes
 - Training
