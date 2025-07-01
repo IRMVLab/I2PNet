@@ -4,11 +4,7 @@
 
 Guangming Wang²*, Yu Zheng¹*, Yuxuan Wu¹, Yanfeng Guo⁴, Zhe Liu¹, Yixiang Zhu⁵, Wolfram Burgard³, Hesheng Wang¹†
 
-¹ Department of Automation, Shanghai Jiao Tong University  
-² University of Cambridge  
-³ University of Technology Nuremberg  
-⁴ University of California  
-⁵ Nanyang Technological University
+² University of Cambridge, ¹ Shanghai Jiao Tong University, ³ University of Technology Nuremberg, ⁴ University of California, ⁵ Nanyang Technological University   
 
 
 ## Abstract
@@ -94,7 +90,6 @@ For cross dataset evaluation, you could simply change the **dataset** and **mode
 ```shell
 python evaluation_proj.py --dataset nus_corr_nolidar --modelcfg config_proj_lidarcenter_nus --network modellearn_proj_center --log_dir <Your_KITTI_training_LOG_dir>
 ```
-
 
 ## Small-Range Localization
 - Training
