@@ -36,7 +36,6 @@ log*/*
 /data_preprocess/nuScenes_script/make_dataset.py
 /calib_ww.py
 /rgg_datas/
-/requirements.txt
 /src/torch_kdtree/
 /src/KNN_CUDA-master/
 /nuscenes_vis3.py
