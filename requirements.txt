@@ -1,0 +1,17 @@
+geomstats==1.17
+graphviz==0.8.4
+h5py==3.6.0
+mmd5sum==1.0.0
+nuscenes-devkit==1.1.9
+open3d==0.15.2
+opencv-python-headless==4.6.0.66
+pyquaternion==0.9.9
+PyYAML==6.0
+thop==0.1.1.post2209072238
+wandb==0.13.3
+tensorboard==2.8.0
+torch==1.12.0+cu113
+torchvision==0.13.0+cu113
+torchaudio==0.12.0+cu113
+tqdm
+
