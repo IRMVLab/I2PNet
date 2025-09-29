@@ -25,7 +25,7 @@ def read_velodyne_bin(path):
 
 
 
-def process_kitti_cat(input_root_path,
+def process_kitti(input_root_path,
                   output_root_path,
                   seq_list):
     for seq in seq_list:
@@ -44,9 +44,24 @@ def process_kitti_cat(input_root_path,
             data_np = read_velodyne_bin(os.path.join(input_folder, '%06d.bin' % i))
             pc_np = data_np[0:3, :]
             intensity_np = data_np[3:, :]
-            snr = np.load(os.path.join(os.path.join(output_folder, '%06d.npy' % i)))[-3:,:]
 
-            output_np = np.concatenate((pc_np,intensity_np,snr), axis=0).astype(np.float32)
+            pc_np = data_np[0:3, :]
+            intensity_np = data_np[3:, :]
+
+            # convert to Open3D point cloud datastructure
+            pcd = open3d.geometry.PointCloud()
+            pcd.points = open3d.utility.Vector3dVector(pc_np.T)
+
+            # surface normal computation
+            pcd.estimate_normals(search_param=open3d.geometry.
+                                     KDTreeSearchParamHybrid(radius=sn_radius, max_nn=sn_max_nn))
+            pcd.orient_normals_to_align_with_direction(np.array([0., 0., 1.]))
+
+            pc_new_np = np.asarray(pcd.points).T  
+            pc_sn_np = np.asarray(pcd.normals).T
+            
+            output_np = np.concatenate((pc_new_np,intensity_np,pc_sn_np), axis=0).astype(np.float32)
+            
             np.save(os.path.join(output_folder, '%06d.npy' % i),output_np)
 
 if __name__ == '__main__':
@@ -70,7 +85,7 @@ if __name__ == '__main__':
     kitti_threads = []
     for i in range(thread_num):
         thread_seq_list = [seq_list[i]]
-        process_kitti_cat(input_root_path,
+        process_kitti(input_root_path,
                       output_root_path,
                       thread_seq_list,
                       )
