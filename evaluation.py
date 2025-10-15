@@ -22,7 +22,7 @@ from src.deterministic import set_seed, seed_worker
 import src.utils as utils
 from compute_loss import Get_loss
 from metric import getExtrinsic, RteRreEval, calibration_error_batch, eval_mrr, eval_msee, cal_rete_once
-#from src.config import I2PNetConfig as modelcfg
+
 try:
     from src.deepi2p_modules.multimodal_classifier_my_snr import MMClassifer
 except:

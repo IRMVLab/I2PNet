@@ -2,10 +2,9 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 import src.utils as utils
-from src.config import I2PNetConfig as cfg_default
 
 
-def focalloss(pred, gt,cfg=cfg_default):
+def focalloss(pred, gt,cfg):
     # pred [N,C] gt [N]
     N, C = pred.shape
     softmax_p = F.softmax(pred, dim=-1)  # N,2
@@ -17,7 +16,7 @@ def focalloss(pred, gt,cfg=cfg_default):
     return fl.mean()
 
 
-def GetProjectionLoss(pm, intrinsic, img_size, decalib_q, decalib_t,cfg=cfg_default):
+def GetProjectionLoss(pm, intrinsic, img_size, decalib_q, decalib_t,cfg):
     # img_size (H,W)
     if pm is None:
         return None
@@ -100,7 +99,7 @@ def GetPointwiseReProjectionLoss(p, intrinsic, img_size, out3, out4, decalib_q, 
     return 1.6 * loss3 + 0.8 * loss4
 
 
-def Get_loss(out3, out4, qq_gt, t_gt, w_x, w_q,cfg=cfg_default):
+def Get_loss(out3, out4, qq_gt, t_gt, w_x, w_q,cfg):
     l2_q = out3[:, :4]
     l2_t = out3[:, 4:]
     l3_q = out4[:, :4]

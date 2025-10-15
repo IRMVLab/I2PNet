@@ -8,7 +8,6 @@ import numpy as np
 import torch.nn.functional as F
 import os
 
-#from src.config import I2PNetConfig as cfg
 from src.modules.basicConv import Conv2d, Conv1d, createCNNs
 from src.modules.pointnet2_module import SetUpconvModule
 from src.modules.MainModules import CostVolume, FlowPredictor, PoseHead, ProjectMask, DelayWeight
@@ -16,7 +15,7 @@ from src.modules.MainModules import CostVolume, FlowPredictor, PoseHead, Project
 
 import src.modules.warp_utils as warp_utils
 import src.utils as utils
-from src.config import I2PNetConfig as cfg_default
+from src.config_proj_lidarcenter import I2PNetConfig as cfg_default
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"  # make error more user-friendly
 
 

@@ -15,9 +15,8 @@ from avgmeter import AverageMeter
 # import src.modellearn as mod
 from src.deterministic import set_seed, seed_worker
 import src.utils as utils
-from compute_loss import Get_loss, GetProjectionLoss, GetPointwiseReProjectionLoss
+from compute_loss import Get_loss
 import torch.nn.functional as F
-# from src.config_proj import I2PNetConfig as modelcfg
 from metric import getExtrinsic, RteRreEval, calibration_error_batch, eval_acc, eval_msee, eval_mrr, cal_rete_once
 from monitor.base import UniWriter
 os.environ["OMP_NUM_THREADS"] = '3'

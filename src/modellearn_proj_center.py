@@ -8,7 +8,7 @@ import numpy as np
 import torch.nn.functional as F
 import os
 
-from src.config_proj import I2PNetConfig as cfg_default
+from src.config_proj_lidarcenter import I2PNetConfig as cfg_default
 from src.modules.basicConv import createCNNs
 
 from src.projectPN.PPBackbone_center import CostVolume, ProjSetUpconvModule, ProjectPointNet,PoseHead,FlowPredictor

@@ -2,7 +2,7 @@ import torch
 from src.projectPN.fused_conv_select.fused_conv_select_k import fused_conv_select_k, FLAG_COPY, FLAG_SHIFT
 import numpy as np
 from pointnet2.pointnet2_utils import grouping_operation
-from src.config_proj import I2PNetConfig as cfg
+from src.config_proj_lidarcenter import I2PNetConfig as cfg
 import matplotlib.pyplot as plt
 
 def get_idx_cuda(B, H, W, device):

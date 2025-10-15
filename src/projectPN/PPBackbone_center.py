@@ -4,7 +4,7 @@ from src.modules.basicConv import Conv1d
 from src.projectPN.utils import get_stride_idx_cuda, get_sample_idx, get_neighbor_copy, gather_torch, \
     grouping, check_valid, get_neighbor_att
 import torch.nn.functional as F
-from src.config_proj import I2PNetConfig as cfg_default
+from src.config_proj_lidarcenter import I2PNetConfig as cfg_default
 
 
 class Conv2d(nn.Module):

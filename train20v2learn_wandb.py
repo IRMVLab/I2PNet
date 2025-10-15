@@ -15,9 +15,8 @@ from avgmeter import AverageMeter
 # import src.modellearn as mod
 from src.deterministic import set_seed, seed_worker
 import src.utils as utils
-from compute_loss import Get_loss, GetProjectionLoss, GetPointwiseReProjectionLoss
+from compute_loss import Get_loss, GetProjectionLoss
 import torch.nn.functional as F
-#from src.config import I2PNetConfig as modelcfg
 from metric import getExtrinsic, RteRreEval, calibration_error_batch, eval_acc, eval_msee, eval_mrr
 from monitor.base import UniWriter
 
@@ -755,7 +754,7 @@ class Trainer(object):
                 self.optimizer.zero_grad()
 
                 if TRAINMODE in ['regist', 'all']:
-                    loss, real_loss, dual_loss = Get_loss(out3, out4, decalib_quat_real, decalib_quat_dual, sx, sq)
+                    loss, real_loss, dual_loss = Get_loss(out3, out4, decalib_quat_real, decalib_quat_dual, sx, sq, cfg=modelcfg)
                 if modelcfg.use_projection_mask:
                     if pm3 is not None or pm4 is not None:
                         l3_loss = GetProjectionLoss(pm3, intrinsic, (rgb_img.shape[-2], rgb_img.shape[-1]),
@@ -794,15 +793,6 @@ class Trainer(object):
                 else:
                     running_p_loss.update(0)
 
-                # if modelcfg.pointwise_reproject_loss:
-                #     point_loss = GetPointwiseReProjectionLoss(lidar_img,intrinsic,(rgb_img.shape[-2],rgb_img.shape[-1]),out3,out4,
-                #                                               decalib_quat_real,decalib_quat_dual)
-                #     loss += point_loss
-                #     running_p_loss.update(point_loss.item())
-                # else:
-                #     running_p_loss.update(0)
-
-                # print('epoch:', epoch, 'loss:', loss, 'counter:', counter, 'sx:', sx, 'sq:', sq)
 
                 running_loss.update(loss.item())
                 if TRAINMODE in ['regist', 'all']:

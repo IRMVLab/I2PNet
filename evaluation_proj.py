@@ -24,7 +24,7 @@ from compute_loss import Get_loss
 from metric import getExtrinsic, RteRreEval, calibration_error_batch, eval_mrr, eval_msee, cal_rete_once, mult_extrinsic_batch, inv_extrinsic, quaternion_distance
 from scipy.spatial.transform import Rotation
 import math
-# from src.config_proj import I2PNetConfig as modelcfg
+
 
 # arg parser
 import src.visualize as vis
