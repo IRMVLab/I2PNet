@@ -59,7 +59,7 @@ Download [KITTI Odometry](https://www.cvlibs.net/datasets/kitti/eval_odometry.ph
   - For the poses:
     ```shell
     cd ./data_preprocess
-    python kitti_png_to_npy.py --src $your_kitti_data_path$ --dst $your_output_path$
+    python kitti_pose.py --src $your_kitti_data_path$ --dst $your_output_path$
     cd ../
     ```
     If using the recommended path, the output will be put in `/dataset/data_odometry_velodyne_deepi2p_new/poses/**/*.npy`.
