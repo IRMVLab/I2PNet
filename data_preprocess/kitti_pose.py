@@ -28,7 +28,7 @@ def process_kitti(input_root_path,
                   seq_list,
                   downsample_voxel_size):
     for seq in seq_list:
-        pose_folder = os.path.join(input_root_path, "data_odometry_velodyne",'data_odometry_poses',"dataset","poses",
+        pose_folder = os.path.join(input_root_path, 'data_odometry_poses',"dataset","poses",
                                    '%02d.txt'%seq)
         output_folder = os.path.join(output_root_path,"poses",'%02d' % seq)
         if not os.path.isdir(output_folder):
@@ -47,7 +47,7 @@ def process_kitti(input_root_path,
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--src', type=str,default="/dataset")
+    parser.add_argument('--src', type=str,default="/dataset/data_odometry_velodyne")
     parser.add_argument('--dst', type=str,default="/dataset/data_odometry_velodyne_deepi2p_new")
     parser.add_argument("--voxelsize",type=float,default=0.1)
     FLAGS = parser.parse_args()

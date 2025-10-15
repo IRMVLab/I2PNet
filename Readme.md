@@ -38,17 +38,36 @@ cd ../../../
 ```
 ## Data Preprocessing
 ### KITTI Preprocessing
-Download [KITTI Odometry](https://www.cvlibs.net/datasets/kitti/eval_odometry.php) sequences 00, 03, 05, 06, 07, 08, 09 and 10. And process the data sequentially as follows: 
+Download [KITTI Odometry](https://www.cvlibs.net/datasets/kitti/eval_odometry.php) sequences and put the downloaded data in `/dataset/data_odometry_velodyne` and `/dataset/data_odometry_color`. The data should include the []() and []() Process the data sequentially as follows:
 
-- For large-range localization, just run
-  ```shell
-  cd ./data_preprocess
-  python kitti_pc_bin_to_npy_with_downsample_sn.py --src $your_kitti_data_path$ --dst $your_output_path$
-  cd ../
-  ```
-  The output will be put in `/dataset/data_odometry_velodyne_deepi2p_new/data_odometry_velodyne_NWU/sequences/**/snr0.6`.
-
-  **Note:** in our dataloader code, we read data from the folder `data_odometry_velodyne_deepi2p_new`, so you could define your output path as like `/dataset/data_odometry_velodyne_deepi2p_new`
+- For large-range localization, you are recommended to use the output path `/dataset/data_odometry_velodyne_deepi2p_new`: 
+  - For the calibration files, download the [data_odometry_calib](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_calib.zip) and put `data_odometry_calib` in `/dataset/data_odometry_velodyne_deepi2p_new`.
+  - For the point cloud:
+      ```shell
+      cd ./data_preprocess
+      python kitti_pc_bin_to_npy_with_downsample_sn.py --src $your_kitti_data_path$ --dst $your_output_path$
+      cd ../
+      ```
+      If using the recommended path, the output will be put in `/dataset/data_odometry_velodyne_deepi2p_new/data_odometry_velodyne_NWU/sequences/**/snr0.6/*.npy`.
+  - For the image:
+    ```shell
+    cd ./data_preprocess
+    python kitti_png_to_npy.py --src $your_kitti_data_path$ --dst $your_output_path$
+    cd ../
+    ```
+    If using the recommended path, the output will be put in `/dataset/data_odometry_velodyne_deepi2p_new/data_odometry_color_npy/sequences/**/image_2/*.npy`.
+  - For the poses:
+    ```shell
+    cd ./data_preprocess
+    python kitti_png_to_npy.py --src $your_kitti_data_path$ --dst $your_output_path$
+    cd ../
+    ```
+    If using the recommended path, the output will be put in `/dataset/data_odometry_velodyne_deepi2p_new/poses/**/*.npy`.
+  - Besides, since we also use `/dataset/kitti_processed_DeepI2P` in our dataloader, you should also create a symbol link 
+    ```shell
+    ln -s /dataset/data_odometry_velodyne_deepi2p_new/ /dataset/kitti_processed_DeepI2P
+    ```
+    If you use another output path, you should modify the path in this command.
 
 - For small-range localization, just run
   ```shell
