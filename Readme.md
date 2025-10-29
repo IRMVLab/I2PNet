@@ -116,6 +116,7 @@ python train20v2learn_wandb_proj.py --gpu 3 --dataset nus_corr_nolidar --modelcf
 ```shell
 python evaluation_proj.py --dataset nus_corr_nolidar --modelcfg config_proj_lidarcenter_nus --network modellearn_proj_center --log_dir <LOG>
 ```
+For direct evaluation, We also provide the [pretrained checkpoints on KITTI and nuScenes](https://drive.google.com/drive/folders/17GsyvvzoS5Cia16_V7Af4Wh-1PHL3kCt?usp=sharing).
 
 ### Final Metrics
 ```shell
