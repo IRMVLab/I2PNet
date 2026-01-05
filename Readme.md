@@ -91,7 +91,7 @@ python gen_maps_our.py \
     --frame_skip 2 \
     --max_translation 5
 ```
-
+we also provide our test pose file `test_RT_10.00_2.00.csv` [here](data_preprocess/nuScenes_script/test_RT_10.00_2.00.csv).
 ## Large-Range Localization
 ### KITTI Dataset Training and evaluation
 - Training
