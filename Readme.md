@@ -6,9 +6,9 @@
 
 
 
-Guangming Wang²*, Yu Zheng¹*, Yuxuan Wu¹, Yanfeng Guo⁴, Zhe Liu¹, Yixiang Zhu⁵, Wolfram Burgard³, Hesheng Wang¹†
+Guangming Wang¹*, Yu Zheng²*, Yuxuan Wu², Yanfeng Guo⁴, Zhe Liu², Yixiang Zhu⁵, Wolfram Burgard³, Hesheng Wang²†
 
-² University of Cambridge, ¹ Shanghai Jiao Tong University, ³ University of Technology Nuremberg, ⁴ University of California, ⁵ Nanyang Technological University   
+¹ University of Cambridge, ² Shanghai Jiao Tong University, ³ University of Technology Nuremberg, ⁴ University of California, ⁵ Nanyang Technological University   
 
 
 ## Abstract
@@ -174,4 +174,5 @@ python evaluation_cmrresult.py --log_dir <LOG>
 # Acknowledgements
 * Implementation of PointNet++ is based on [Pointnet2_PyTorch](https://github.com/erikwijmans/Pointnet2_PyTorch).
 * Implementation of data preprocessing inherited from [CMRNet](https://github.com/cattaneod/CMRNet).
+
 * Implementation of projection-aware operators from [EfficientLO-Net](https://github.com/IRMVLab/EfficientLO-Net).
