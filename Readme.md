@@ -75,6 +75,8 @@ Download [KITTI Odometry](https://www.cvlibs.net/datasets/kitti/eval_odometry.ph
   python kitti_maps_cmr.py --sequence 00 --kitti_folder ./KITTI_ODOMETRY/
   cd ../
   ```
+we also provide our test pose file `test_RT_seq00_10.00_2.00.csv` [here](data_preprocess/CMRNet_script/test_RT_seq00_10.00_2.00.csv).
+
   **Note:** please uncomment the range constraint at “# y \in [-10,10] x \in [-5,15]” in the [kitti_maps_cmr.py](data_preprocess/CMRNet_script/kitti_maps_cmr.py) code, and comment out lines at “# y \in [-25,25] x \in [-10,100]” 
   
 ### NuScenes Preprocessing
