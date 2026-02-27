@@ -51,7 +51,6 @@ log*/*
 /data_preprocess/place_reg/
 /src/util/lie_metric/data_64.config.yaml
 /data_preprocess/CMRNet_script/runtime_build_map_test.py
-/data_preprocess/CMRNet_script/generate_test_trans.py
 /data_preprocess/CMRNet_script/generate_ply.py
 /generate_paper_vis.py
 /evaluation_vis_test_cmr.py

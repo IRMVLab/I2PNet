@@ -139,7 +139,7 @@ python train20v2learn_wandb.py --gpu 1 --dataset kd_cmr_snr --modelcfg config_li
 ```shell
 python evaluation_cmr.py --dataset kd_cmr_snr --log_dir <LOG> --gpu 1
 ```
-
+Test files for different seeds are provided in [this link](https://drive.google.com/drive/folders/1QtLeHBsAHS7EzK69VWf7dj4niLF1WPyx?usp=sharing). Please put this folder `test_set_trans` under  `./data_preprocess/CMRNet_script`.
 ### nuScenes
 - Training
 ```shell
